@@ -4,7 +4,7 @@ const ImageContainer = () => {
 const [opacity, setOpacity] = useState(0.5);
 const [isDrawing, setIsDrawing] = useState(false);
 const [canvasWidth, setCanvasWidth] = useState(0);
-  const [canvasHeight, setCanvasHeight] = useState(0);
+const [canvasHeight, setCanvasHeight] = useState(0);
 const canvasRef = useRef(null);
 const imageRef = useRef(null);
 const drawingRef = useRef([]); 
@@ -29,43 +29,38 @@ useEffect(() => {
   }
 }, [canvasWidth]);
 
-// useEffect(() => {
-//   // Get the dimensions of the superimposed container and the original image
-//   const superimposedContainer = document.querySelector('.superimposed-container');
-//   const image = imageRef.current;
-//   if (superimposedContainer && image) {
-//     const containerWidth = superimposedContainer.clientWidth;
-//     const imageWidth = image.width;
-//     const scaleFactor = containerWidth / imageWidth;
-//     const containerHeight = image.height * scaleFactor;
-//     setCanvasWidth(containerWidth);
-//     setCanvasHeight(containerHeight);
-//   }
-// }, []);
+
 useEffect(() => {
   const canvas = canvasRef.current;
   const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = 'black'; // Set the stroke color to white
+  ctx.strokeStyle = 'white'; // Set the stroke color to white
   ctx.scale(2, 2);
-  ctx.lineWidth = 20; // Set the line width
+  ctx.lineWidth = 10; 
+  ctx.shadowBlur = 5;// Set the line width
 }, []);
 
   // Event handler for adjusting the opacity
   const handleOpacityChange = (event) => {
     setOpacity(event.target.value);
   };
+
+
   const startDrawing = (event) => {
     console.log('Start drawing');
     setIsDrawing(true);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    ctx.lineWidth = 20;
-    //const { offsetX, offsetY } = event.nativeEvent;
-  const offsetX = event.clientX - rect.left; // Adjust mouse X coordinate
-  const offsetY = event.clientY - rect.top;
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#FFFFFF';
+
+    ctx.shadowBlur = 5;
+    const offsetX = 2*(event.clientX - rect.left); // Adjust mouse X coordinate
+    const offsetY = 2*(event.clientY - rect.top);
     ctx.beginPath();
-  ctx.moveTo(offsetX, offsetY);
+    ctx.moveTo(offsetX, offsetY);
+
+    drawingRef.current.push([{ x: offsetX, y: offsetY }]);
     
   };
   const draw = (event) => {
@@ -73,20 +68,16 @@ useEffect(() => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
-    //const { offsetX, offsetY } = event.nativeEvent;
     const rect = canvas.getBoundingClientRect(); // Get the size of canvas and its position relative to the viewport
-  const offsetX = event.clientX - rect.left; // Adjust mouse X coordinate
-  const offsetY = event.clientY - rect.top; 
+    ctx.strokeStyle = '#FFFFFF';
+    const offsetX = 2*(event.clientX - rect.left); // Adjust mouse X coordinate
+    const offsetY = 2*(event.clientY - rect.top); 
+    
     ctx.lineTo(offsetX, offsetY);
     ctx.stroke();
-    ctx.lineWidth = 20;
-    if (drawingRef.current !== null) {
-    const drawingPath = { x: offsetX, y: offsetY };
-      //const drawingPath = { x: offsetX * (canvas.offsetWidth / canvas.width), y: offsetY * (canvas.offsetHeight / canvas.height) };
-      drawingRef.current.push(drawingPath);
+    ctx.lineWidth = 10;
     
-    }
+    drawingRef.current[drawingRef.current.length - 1].push({ x: offsetX, y: offsetY });
   };
 
   const stopDrawing = () => {
@@ -96,42 +87,36 @@ useEffect(() => {
   const downloadImage = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
     const image = imageRef.current;
-    console.log('Canvas width:', canvas.width);
-  console.log('Canvas height:', canvas.height);
-  
+
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-  //   console.log('New canvas width:', canvas.width);
-  // console.log('New canvas height:', canvas.height);
+    //ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.shadowBlur = 10;
   // Draw the original image on the canvas
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-  // Draw the drawing on the canvas
-//   if (drawingRef.current.length > 0)
-//   {
-//   const drawingPath = drawingRef.current;
-//   console.log('Drawing path:', drawingPath);
-//   ctx.beginPath();
-//   ctx.moveTo(drawingPath[0].x, drawingPath[0].y);
-//   for (let i = 1; i < drawingPath.length; i++) {
-//     ctx.lineTo(drawingPath[i].x, drawingPath[i].y);
-//     ctx.stroke();
-//   }
-// }
+ 
 
   // Draw the drawing on the canvas using white color
-  ctx.strokeStyle = 'white';
-  ctx.beginPath();
-  ctx.lineWidth = 20;
-  drawingRef.current.forEach(({ x, y }, index) => {
-    if (index === 0) {
-      ctx.moveTo(x * (canvas.width / canvas.offsetWidth), y * (canvas.height / canvas.offsetHeight));
-    } else {
-     ctx.lineTo(x * (canvas.width / canvas.offsetWidth), y * (canvas.height / canvas.offsetHeight));
+    ctx.strokeStyle = 'white';
+    //ctx.beginPath();
+    ctx.lineWidth = 10;
+
+drawingRef.current.forEach(path => {
+    if (path.length) {
+        ctx.beginPath(); // Start a new path
+        // Scale the coordinates according to the canvas size
+        ctx.moveTo(path[0].x *0.5* (canvas.width / canvas.offsetWidth), path[0].y *0.5* (canvas.height / canvas.offsetHeight));
+        path.forEach((point, index) => {
+            if (index > 0) {
+                ctx.lineTo(point.x*0.5 * (canvas.width / canvas.offsetWidth), point.y *0.5 * (canvas.height / canvas.offsetHeight));
+            }
+        });
+        ctx.stroke(); // Apply the stroke to the path
     }
-  });
-  ctx.stroke(); 
+});
+
   // Draw the drawing on the canvas
     const dataUrl = canvas.toDataURL('image/png');
    
